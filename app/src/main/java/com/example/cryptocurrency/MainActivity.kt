@@ -6,10 +6,9 @@ import android.widget.Toast
 import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.Response
-import com.android.volley.toolbox.BasicNetwork
-import com.android.volley.toolbox.DiskBasedCache
-import com.android.volley.toolbox.HurlStack
-import com.android.volley.toolbox.StringRequest
+import com.android.volley.VolleyError
+import com.android.volley.toolbox.*
+import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() {
 
@@ -18,28 +17,40 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val cache = DiskBasedCache(cacheDir, 1024 * 1024) // 1MB cap
-
-// Set up the network to use HttpURLConnection as the HTTP client.
         val network = BasicNetwork(HurlStack())
 
-// Instantiate the RequestQueue with the cache and network. Start the queue.
         val requestQueue = RequestQueue(cache, network).apply {
             start()
         }
-
         val url = "https://api.coinranking.com/v1/public/coins"
+        val coinsObject = JsonObjectRequest(
+            Request.Method.GET,
+            url,
+            null,
+            object : Response.Listener<JSONObject> {
 
+                override fun onResponse(response: JSONObject?) {
 
-// Formulate the request and handle the response.
-        val stringRequest = StringRequest(Request.Method.GET, url,
-                Response.Listener<String> { response -> Toast.makeText(applicationContext," Done", Toast.LENGTH_SHORT).show()
-                    // Do something with the response
-                },
-                Response.ErrorListener { error -> Toast.makeText(applicationContext," ERROR", Toast.LENGTH_SHORT).show()
-                })
+                    var data = response?.getJSONObject("data")
+                    var name = data?.getJSONArray("coins")?.getJSONObject(0)?.getString("name")
+                    var symbol = data?.getJSONArray("coins")?.getJSONObject(0)?.getString("symbol")
+                    var description =
+                        data?.getJSONArray("coins")?.getJSONObject(0)?.getString("description")
+                    var color = data?.getJSONArray("coins")?.getJSONObject(0)?.getString("color")
+                    var iconUrl =
+                        data?.getJSONArray("coins")?.getJSONObject(0)?.getString("iconUrl")
+                    var price = data?.getJSONArray("coins")?.getJSONObject(0)?.getString("price")
 
-// Add the request to the RequestQueue.
-        requestQueue.add(stringRequest)
+                }
+
+            },
+            object : Response.ErrorListener {
+                override fun onErrorResponse(error: VolleyError?) {
+                    Toast.makeText(applicationContext, " Error", Toast.LENGTH_SHORT).show()
+                }
+            })
+
+        MySingleton.getInstance(this).addToRequestQueue(coinsObject)
 
 
     }
