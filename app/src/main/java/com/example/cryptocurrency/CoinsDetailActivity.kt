@@ -25,7 +25,7 @@ class CoinsDetailActivity : AppCompatActivity() {
         val coinsDescription = intent.extras?.get("description") as Array<*>
 
         supportActionBar?.setTitle(coinsSymbol[list_position].toString())
-        tvCoinsDetails.setText(coinsDescription[list_position].toString()+coinsDescription[list_position].toString()+coinsDescription[list_position].toString())
+        tvCoinsDetails.setText(coinsDescription[list_position].toString())
         tvCoinsName.setText(coinsName[list_position].toString())
         tvCoinsDPrice.setText(coinsPrice[list_position].toString())
         var imageUri: Uri = Uri.parse(coinsIconUrl[list_position].toString())
