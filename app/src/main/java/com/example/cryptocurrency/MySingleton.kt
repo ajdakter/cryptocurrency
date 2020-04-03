@@ -12,6 +12,7 @@ class MySingleton constructor(context: Context) {
     companion object {
         @Volatile
         private var INSTANCE: MySingleton? = null
+
         fun getInstance(context: Context) =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: MySingleton(context).also {
@@ -19,6 +20,7 @@ class MySingleton constructor(context: Context) {
                 }
             }
     }
+
     val imageLoader: ImageLoader by lazy {
         ImageLoader(requestQueue,
             object : ImageLoader.ImageCache {
@@ -26,6 +28,7 @@ class MySingleton constructor(context: Context) {
                 override fun getBitmap(url: String): Bitmap {
                     return cache.get(url)
                 }
+
                 override fun putBitmap(url: String, bitmap: Bitmap) {
                     cache.put(url, bitmap)
                 }
@@ -34,6 +37,7 @@ class MySingleton constructor(context: Context) {
     val requestQueue: RequestQueue by lazy {
         Volley.newRequestQueue(context.applicationContext)
     }
+
     fun <T> addToRequestQueue(req: Request<T>) {
         requestQueue.add(req)
     }

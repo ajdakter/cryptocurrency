@@ -1,33 +1,42 @@
 package com.example.cryptocurrency
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.android.volley.Request
-import com.android.volley.RequestQueue
 import com.android.volley.Response
 import com.android.volley.VolleyError
-import com.android.volley.toolbox.BasicNetwork
-import com.android.volley.toolbox.DiskBasedCache
-import com.android.volley.toolbox.HurlStack
 import com.android.volley.toolbox.JsonObjectRequest
+import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONObject
-
+import java.text.DecimalFormat
 
 class MainActivity : AppCompatActivity() {
+
+    var symbolCoinArray: Array<String> = Array<String>(40) { "" }
+    var priceCoinArray: Array<String> = Array<String>(40) { "" }
+    var iconUrlCoinsArray: Array<String> = Array<String>(40) { "" }
+    var colorCoinsArray: Array<String> = Array<String>(40) { "" }
+    var nameCoinsArray: Array<String> = Array<String>(40) { "" }
+    var descriptionCoinsArray: Array<String> = Array<String>(40) { "" }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        var CoinObjectArray: Array<CoinObject> = Array<CoinObject>(40) { CoinObject() }
 
-        val cache = DiskBasedCache(cacheDir, 1024 * 1024) // 1MB cap
-        val network = BasicNetwork(HurlStack())
+        var coinAdapter =
+            CoinsArrayAdapter(
+                this,
+                R.layout.custom_coins_row,
+                R.id.tvCoinsSymbol,
+                symbolCoinArray,
+                priceCoinArray,
+                iconUrlCoinsArray,
+                colorCoinsArray
+            )
 
-        val requestQueue = RequestQueue(cache, network).apply {
-            start()
-        }
         val url = "https://api.coinranking.com/v1/public/coins"
         val coinsObject = JsonObjectRequest(
             Request.Method.GET,
@@ -36,8 +45,28 @@ class MainActivity : AppCompatActivity() {
             object : Response.Listener<JSONObject> {
 
                 override fun onResponse(response: JSONObject?) {
-                    CoinObjectArray = dataParsing(response)
 
+                    getCoinsFeatures(response, "symbol", symbolCoinArray)
+                    getCoinsFeatures(response, "price", priceCoinArray)
+                    getCoinsFeatures(response, "iconUrl", iconUrlCoinsArray)
+                    getCoinsFeatures(response, "color", colorCoinsArray)
+                    getCoinsFeatures(response, "name", nameCoinsArray)
+                    getCoinsFeatures(response, "description", descriptionCoinsArray)
+                    listCoins.adapter = coinAdapter
+                    coinAdapter.notifyDataSetChanged()
+
+                    listCoins.setOnItemClickListener { parent, view, position, id ->
+
+                        var intent=Intent(this@MainActivity,CoinsDetailActivity::class.java)
+                        intent.putExtra("position",position)
+                        intent.putExtra("price",priceCoinArray)
+                        intent.putExtra("iconUrl",iconUrlCoinsArray)
+                        intent.putExtra("description",descriptionCoinsArray)
+                        intent.putExtra("name",nameCoinsArray)
+                        intent.putExtra("symbol",symbolCoinArray)
+                        startActivity(intent)
+
+                    }
 
                 }
 
@@ -49,34 +78,25 @@ class MainActivity : AppCompatActivity() {
             })
 
         MySingleton.getInstance(this).addToRequestQueue(coinsObject)
+   }
 
+    private fun getCoinsFeatures(response: JSONObject?, option: String, array: Array<String>) {
 
+        for (i in 0..39) {
+            if (option == "price") {
+
+                var data = response?.getJSONObject("data")
+                val df = DecimalFormat("#.##")
+                array[i] =
+                    (df.format(data?.getJSONArray("coins")?.getJSONObject(i)?.getString(option)?.toDouble())).toString()
+            } else {
+
+                var data = response?.getJSONObject("data")
+                array[i] =
+                    data?.getJSONArray("coins")?.getJSONObject(i)?.getString(option).toString()
+
+            }
+        }
     }
-}
-
-fun dataParsing(response: JSONObject?): Array<CoinObject> {
-    var coinObjectArray: Array<CoinObject> = Array<CoinObject>(40) { CoinObject() }
-
-    for (i in 0..39) {
-
-        var data = response?.getJSONObject("data")
-        var name = data?.getJSONArray("coins")?.getJSONObject(i)?.getString("name")
-        var symbol =
-            data?.getJSONArray("coins")?.getJSONObject(i)?.getString("symbol")
-        var description =
-            data?.getJSONArray("coins")?.getJSONObject(i)?.getString("description")
-        var color =
-            data?.getJSONArray("coins")?.getJSONObject(i)?.getString("color")
-        var iconUrl =
-            data?.getJSONArray("coins")?.getJSONObject(i)?.getString("iconUrl")
-        var price =
-            data?.getJSONArray("coins")?.getJSONObject(i)?.getString("price")
-
-        coinObjectArray[i] = CoinObject(
-            name.toString(), symbol.toString(), description.toString(),
-            price?.toDouble()!!, color.toString(), iconUrl.toString()
-        )
-    }
-    return coinObjectArray
 }
 
